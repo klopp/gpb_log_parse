@@ -1,5 +1,6 @@
 #!/usr/bin/perl
 
+# ------------------------------------------------------------------------------
 use Modern::Perl;
 
 use Const::Fast;
@@ -20,6 +21,7 @@ const my $DB_PASSWORD => 'test_password';
 const my $DB_HOST     => 'localhost';
 const my $DB_PORT     => '3306';
 
+# ------------------------------------------------------------------------------
 my $dbh = DBI->connect(
     'dbi:mysql:database=' . $DB_NAME . ';host=' . $DB_HOST . ';port=' . $DB_PORT,
     $DB_USER,
@@ -29,9 +31,8 @@ my $dbh = DBI->connect(
         PrintError => 1,
     }
 );
-
 my $message_stmt
-    # раз уж "CONSTRAINT message_id_pk PRIMARY KEY(id)", то нужно IGNORE:
+                   # раз уж "CONSTRAINT message_id_pk PRIMARY KEY(id)", то нужно IGNORE:
     = $dbh->prepare(
     'INSERT IGNORE INTO `message` (`address`, `created`, `id`, `int_id`, `str`) VALUES (?, ?, ?, ?, ?)'
     );
@@ -90,8 +91,10 @@ while (<$file>) {
         $log_stmt->execute( $address, $created, $internal_id, $line );
     }
 }
-$dbh->commit;
 close $file;
 undef $message_stmt;
 undef $log_stmt;
+$dbh->commit;
 $dbh->disconnect;
+
+# ------------------------------------------------------------------------------
