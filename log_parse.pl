@@ -1,5 +1,6 @@
 #!/usr/bin/perl
 
+# ------------------------------------------------------------------------------
 use Modern::Perl;
 
 use Const::Fast;
@@ -20,6 +21,16 @@ const my $DB_PASSWORD => 'test_password';
 const my $DB_HOST     => 'localhost';
 const my $DB_PORT     => '3306';
 
+my ( @table_message, @table_log );
+
+# поля в таблицах:
+const my @FIELDS_MESSAGE => ( 'address', 'created', 'id', 'int_id', 'str' );
+const my @FIELDS_LOG => ( 'address', 'created', 'int_id', 'str' );
+
+# сколько записей вставлять за один INSERT:
+const my $INSERT_RECORDS => 256;
+
+# ------------------------------------------------------------------------------
 my $dbh = DBI->connect(
     'dbi:mysql:database=' . $DB_NAME . ';host=' . $DB_HOST . ';port=' . $DB_PORT,
     $DB_USER,
@@ -29,15 +40,6 @@ my $dbh = DBI->connect(
         PrintError => 1,
     }
 );
-
-my $message_stmt
-    # раз уж "CONSTRAINT message_id_pk PRIMARY KEY(id)", то нужно IGNORE:
-    = $dbh->prepare(
-    'INSERT IGNORE INTO `message` (`address`, `created`, `id`, `int_id`, `str`) VALUES (?, ?, ?, ?, ?)'
-    );
-my $log_stmt
-    = $dbh->prepare(
-    'INSERT INTO `log` (`address`, `created`, `int_id`, `str`) VALUES (?, ?, ?, ?)');
 
 open my $file, '<:raw', $LOG_FILE;
 while (<$file>) {
@@ -83,15 +85,41 @@ while (<$file>) {
 
     if ($flag) {
         if ($id) {
-            $message_stmt->execute( $address, $created, $id, $internal_id, $line );
+            push @table_message, $address, $created, $id, $internal_id, $line;
         }
     }
     else {
-        $log_stmt->execute( $address, $created, $internal_id, $line );
+        push @table_log, $address, $created, $internal_id, $line;
     }
 }
-$dbh->commit;
+
+write_table( 'message', \@table_message, \@FIELDS_MESSAGE );
+write_table( 'log',     \@table_log,     \@FIELDS_LOG );
+
 close $file;
-undef $message_stmt;
-undef $log_stmt;
+$dbh->commit;
 $dbh->disconnect;
+
+# ------------------------------------------------------------------------------
+sub write_table
+{
+    my ( $table, $data, $fields ) = @_;
+
+    # а был бы DBD::Pg - можно было бы использовать pg_putcopydata...
+    my $sql_base = "INSERT IGNORE INTO `$table` (`" . join( '`, `', @{$fields} ) . '`) VALUES(';
+
+    while ( my @portion = splice @{$data}, 0, $INSERT_RECORDS * scalar @{$fields} ) {
+        my $sql = $sql_base;
+        for ( 1 .. ( scalar @portion / scalar @{$fields} ) ) {
+            $sql .= join( ',', ('?') x scalar @{$fields} ) . '),(';
+        }
+        chop $sql;
+        chop $sql;
+
+        my $stmt = $dbh->prepare_cached($sql);
+        $stmt->execute(@portion);
+        $stmt->finish;
+    }
+}
+
+# ------------------------------------------------------------------------------
