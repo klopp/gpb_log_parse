@@ -2,7 +2,6 @@
 
 use Modern::Perl;
 
-use Carp qw/croak/;
 use Const::Fast;
 use DBI;
 use Email::Valid;
