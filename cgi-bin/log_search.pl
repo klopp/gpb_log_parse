@@ -74,7 +74,7 @@ $html =~ s/__WARNING__/$warning/sm;
 say $html;
 
 for ( 0 .. $RECORDS_LIMIT - 1 ) {
-    next unless $data->[$_];
+    last unless $data->[$_];
     say $data->[$_]->{created} . q { } . $data->[$_]->{str};
 }
 
