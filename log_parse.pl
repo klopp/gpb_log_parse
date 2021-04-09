@@ -31,7 +31,6 @@ my $dbh = DBI->connect(
 );
 
 my $message_stmt
-
     # раз уж "CONSTRAINT message_id_pk PRIMARY KEY(id)", то нужно IGNORE:
     = $dbh->prepare(
     'INSERT IGNORE INTO `message` (`address`, `created`, `id`, `int_id`, `str`) VALUES (?, ?, ?, ?, ?)'
