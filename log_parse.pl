@@ -92,7 +92,6 @@ while (<$file>) {
         push @table_log, $address, $created, $internal_id, $line;
     }
 }
-
 write_table( 'message', \@table_message, \@FIELDS_MESSAGE );
 write_table( 'log',     \@table_log,     \@FIELDS_LOG );
 
