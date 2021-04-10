@@ -46,9 +46,9 @@ while (<$file>) {
     chomp;
 
     my $line = $_;
-    next unless $line =~ /^$RX_DATE_TIME/;
+    next unless $line =~ /$RX_DATE_TIME/;
     my $created = $1;
-    $line =~ s/^$RX_DATE_TIME//;
+    $line =~ s/$RX_DATE_TIME//;
     $line =~ s/^\s+|\s+$//g;
 
 # чтобы не изобретать велосипед, и не спотыкаться на поисках id тупыми регекспами
@@ -69,10 +69,9 @@ while (<$file>) {
 
 # критерий определения адреса не описан, берём первый подходящий:
         if ( !$address ) {
-
-            # из того, что встретилось, адрес может быть:
-            # <address>
-            # address:
+                # из того, что встретилось, адрес может быть:
+                # <address>
+                # address:
             my $tmp = $parts[$part];
             $tmp =~ s/^<|[:>]$//g;
             if ( Email::Valid->address($tmp) ) {
